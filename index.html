@@ -3,9 +3,1887 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Soren Grammar</title>
+  <title>Soren's Grammar Adventure</title>
+  <style>
+    /* ============================================================
+       CSS DESIGN SYSTEM
+    ============================================================ */
+    :root {
+      --color-noun:        #FF6B6B;
+      --color-verb:        #4ECDC4;
+      --color-adjective:   #FFE66D;
+      --color-adverb:      #A29BFE;
+      --color-article:     #74B9FF;
+      --color-pronoun:     #FD79A8;
+      --color-preposition: #55EFC4;
+      --color-conjunction: #FDCB6E;
+      --color-bg:          #1A1A2E;
+      --color-surface:     #16213E;
+      --color-surface2:    #0F3460;
+      --color-text:        #EAEAEA;
+      --color-text-muted:  #9BA4B4;
+      --color-correct:     #00B894;
+      --color-wrong:       #D63031;
+      --color-gold:        #F9CA24;
+      --radius:            10px;
+      --radius-lg:         16px;
+      --shadow:            0 4px 20px rgba(0,0,0,0.4);
+      --transition:        0.2s ease;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ============================================================
+       SCREENS
+    ============================================================ */
+    .screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      flex-direction: column;
+      align-items: center;
+      padding: clamp(0.75rem, 3vw, 1.5rem);
+      overflow: hidden;
+    }
+    .screen--active { display: flex; }
+    .screen-inner {
+      width: 100%;
+      max-width: 900px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 1rem;
+    }
+
+    /* ============================================================
+       TYPOGRAPHY
+    ============================================================ */
+    h1 { font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 800; }
+    h2 { font-size: clamp(1.3rem, 3.5vw, 2rem); font-weight: 700; }
+    h3 { font-size: clamp(1rem, 2.5vw, 1.4rem); font-weight: 600; }
+
+    /* ============================================================
+       BUTTONS
+    ============================================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.6rem 1.4rem;
+      border-radius: var(--radius);
+      border: none;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+      min-height: 44px;
+      min-width: 44px;
+      text-decoration: none;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn--primary {
+      background: linear-gradient(135deg, #6C63FF, #4ECDC4);
+      color: white;
+      box-shadow: 0 4px 15px rgba(108,99,255,0.4);
+    }
+    .btn--primary:hover { box-shadow: 0 6px 20px rgba(108,99,255,0.6); transform: translateY(-1px); }
+    .btn--ghost {
+      background: transparent;
+      color: var(--color-text-muted);
+      border: 2px solid var(--color-surface2);
+    }
+    .btn--ghost:hover { border-color: var(--color-text-muted); color: var(--color-text); }
+    .btn:disabled { opacity: 0.4; pointer-events: none; }
+
+    /* ============================================================
+       CARDS
+    ============================================================ */
+    .card {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      padding: clamp(1rem, 3vw, 1.5rem);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* ============================================================
+       TILES (word chips)
+    ============================================================ */
+    .tile {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius);
+      background: var(--color-surface2);
+      border: 2px solid transparent;
+      font-size: clamp(0.85rem, 2.5vw, 1.1rem);
+      font-weight: 600;
+      cursor: grab;
+      transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+      user-select: none;
+      touch-action: none;
+      position: relative;
+      min-height: 44px;
+      min-width: 44px;
+      justify-content: center;
+    }
+    .tile:active { cursor: grabbing; }
+    .tile.tile--labeled {
+      border-color: var(--label-color, #fff);
+      box-shadow: 0 0 8px var(--label-color, transparent);
+    }
+    .tile-label {
+      font-size: 0.6rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 2px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .tile.tile--labeled .tile-label { opacity: 1; }
+
+    /* ============================================================
+       POS BADGES
+    ============================================================ */
+    .pos-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.45rem 1rem;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 0.8rem;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+      min-height: 44px;
+      min-width: 44px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .pos-badge:active { cursor: grabbing; }
+    .pos-badge:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+    /* ============================================================
+       SCORE DISPLAY
+    ============================================================ */
+    .score-display {
+      background: var(--color-surface2);
+      border-radius: var(--radius);
+      padding: 0.3rem 0.8rem;
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    /* ============================================================
+       HEADER BAR
+    ============================================================ */
+    .game-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 900px;
+      margin-bottom: 0.75rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .game-header-left { display: flex; align-items: center; gap: 0.5rem; }
+    .game-header-right { display: flex; align-items: center; gap: 0.5rem; }
+
+    /* ============================================================
+       DRAG GHOST
+    ============================================================ */
+    .drag-ghost {
+      position: fixed !important;
+      pointer-events: none !important;
+      z-index: 9999 !important;
+      opacity: 0.9 !important;
+      transform: scale(1.08) rotate(2deg) !important;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5) !important;
+    }
+
+    .drop-target--hover {
+      outline: 3px dashed rgba(255,255,255,0.5);
+      outline-offset: 3px;
+    }
+
+    /* ============================================================
+       FLOATING POINTS
+    ============================================================ */
+    .floating-points {
+      position: fixed;
+      font-weight: 800;
+      font-size: 1.2rem;
+      pointer-events: none;
+      z-index: 9998;
+      animation: floatUp 1.2s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-60px); }
+    }
+
+    /* ============================================================
+       KEYFRAME ANIMATIONS
+    ============================================================ */
+    @keyframes lockIn {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.18); }
+      70%  { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+    @keyframes flashWrong {
+      0%,100% { background: var(--color-surface2); }
+      30%,70%  { background: var(--color-wrong); }
+    }
+    @keyframes flashCorrect {
+      0%   { background: var(--color-surface2); }
+      50%  { background: var(--color-correct); }
+      100% { background: var(--color-correct); }
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-8px); }
+      40%     { transform: translateX(8px); }
+      60%     { transform: translateX(-5px); }
+      80%     { transform: translateX(5px); }
+    }
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes starBurst {
+      0%   { transform: scale(0) rotate(-30deg); opacity: 0; }
+      60%  { transform: scale(1.25) rotate(5deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+    @keyframes pulseBorder {
+      0%,100% { box-shadow: 0 0 0 0 currentColor; }
+      50%     { box-shadow: 0 0 0 6px transparent; }
+    }
+    @keyframes bounceIn {
+      0%   { transform: scale(0.6); opacity: 0; }
+      70%  { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    .anim-lock-in      { animation: lockIn 0.45s ease forwards; }
+    .anim-flash-wrong  { animation: flashWrong 0.45s ease; }
+    .anim-flash-correct{ animation: flashCorrect 0.4s ease forwards; }
+    .anim-shake        { animation: shake 0.4s ease; }
+    .anim-float-in     { animation: floatIn 0.4s ease forwards; }
+    .anim-star-burst   { animation: starBurst 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+    .anim-bounce-in    { animation: bounceIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+    .anim-slide-up     { animation: slideUp 0.35s ease forwards; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ============================================================
+       HOME SCREEN
+    ============================================================ */
+    #screen-home {
+      background: radial-gradient(ellipse at 50% 0%, #0F3460 0%, #1A1A2E 70%);
+    }
+    .home-hero {
+      text-align: center;
+      padding: 1.5rem 0 1rem;
+    }
+    .home-hero h1 {
+      background: linear-gradient(135deg, #74B9FF, #A29BFE, #FD79A8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.4rem;
+    }
+    .home-hero p {
+      color: var(--color-text-muted);
+      font-size: 1.05rem;
+    }
+    .game-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      width: 100%;
+      margin-top: 1rem;
+    }
+    .game-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      padding: 1.4rem;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      box-shadow: var(--shadow);
+    }
+    .game-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    }
+    .game-card.card--c1:hover { border-color: var(--color-verb); }
+    .game-card.card--c2:hover { border-color: var(--color-noun); }
+    .game-card.card--c3:hover { border-color: var(--color-adjective); }
+    .game-card-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .game-card h3 { margin-bottom: 0.4rem; }
+    .game-card p { color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5; }
+    .game-card-badge {
+      display: inline-block;
+      margin-top: 0.75rem;
+      padding: 0.2rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ============================================================
+       CONCEPT 1 — SENTENCE LAB
+    ============================================================ */
+    .tier-badge {
+      background: var(--color-surface2);
+      border-radius: 20px;
+      padding: 0.25rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--color-text-muted);
+    }
+    .c1-sentence-ref {
+      text-align: center;
+      font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+      color: var(--color-text-muted);
+      margin: 0.4rem 0;
+      font-style: italic;
+    }
+    .tile-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin: 0.75rem 0;
+      width: 100%;
+    }
+    .pos-palette {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      padding: 1rem;
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+    .palette-label {
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      margin-bottom: 0.3rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .hint-text {
+      min-height: 1.4rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--color-adverb);
+      font-style: italic;
+      margin-top: 0.4rem;
+    }
+    .progress-dots {
+      display: flex;
+      gap: 0.4rem;
+      justify-content: center;
+      margin-top: 0.5rem;
+    }
+    .progress-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--color-surface2);
+      transition: background 0.3s;
+    }
+    .progress-dot.dot--done { background: var(--color-correct); }
+    .progress-dot.dot--active { background: var(--color-adverb); }
+
+    /* ============================================================
+       CONCEPT 2 — TAP-TO-COLOR HUNT
+    ============================================================ */
+    .mission-picker {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+    .mission-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      padding: 1.2rem 0.8rem;
+      text-align: center;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      box-shadow: var(--shadow);
+    }
+    .mission-card:hover { transform: translateY(-3px); }
+    .mission-card-icon { font-size: 2rem; margin-bottom: 0.4rem; }
+    .mission-card h3 { font-size: 0.95rem; }
+    .c2-game-area { width: 100%; display: none; flex-direction: column; align-items: center; }
+    .c2-game-area.c2--active { display: flex; }
+    .c2-mission-label {
+      font-size: clamp(1rem, 3vw, 1.4rem);
+      font-weight: 800;
+      padding: 0.4rem 1.2rem;
+      border-radius: 30px;
+      margin: 0 auto;
+    }
+    .timer-pill {
+      background: var(--color-surface2);
+      border-radius: 20px;
+      padding: 0.3rem 0.8rem;
+      font-weight: 800;
+      font-size: 1.1rem;
+      transition: color 0.3s;
+    }
+    .timer-pill.timer--urgent { color: var(--color-wrong); }
+    .streak-display {
+      background: var(--color-surface2);
+      border-radius: 20px;
+      padding: 0.3rem 0.8rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .c2-sentence {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin: 1rem 0;
+      width: 100%;
+    }
+    .c2-word {
+      padding: 0.55rem 0.9rem;
+      border-radius: var(--radius);
+      background: var(--color-surface2);
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      min-height: 44px;
+      min-width: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .c2-word:hover { transform: scale(1.05); }
+    .c2-word.word--correct {
+      color: #1A1A2E;
+      font-weight: 800;
+    }
+    .c2-word.word--already-tapped { cursor: default; }
+    .c2-progress-text {
+      color: var(--color-text-muted);
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+    .c2-found-counter {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-top: 0.25rem;
+    }
+
+    /* ============================================================
+       CONCEPT 3 — BUILD-A-SENTENCE
+    ============================================================ */
+    .recipe-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      justify-content: center;
+      margin: 0.5rem 0;
+      width: 100%;
+      align-items: center;
+    }
+    .recipe-slot-label {
+      padding: 0.3rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #1A1A2E;
+    }
+    .recipe-plus {
+      color: var(--color-text-muted);
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    .drop-slots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin: 0.75rem 0;
+      width: 100%;
+    }
+    .drop-slot {
+      min-width: 90px;
+      min-height: 54px;
+      border-radius: var(--radius);
+      border: 2px dashed var(--slot-color, rgba(255,255,255,0.25));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+      padding: 0.4rem 0.6rem;
+      text-align: center;
+      position: relative;
+      cursor: default;
+    }
+    .drop-slot .slot-hint {
+      font-size: 0.65rem;
+      color: var(--slot-color, rgba(255,255,255,0.35));
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+    }
+    .drop-slot.slot--filled {
+      border-style: solid;
+      background: rgba(255,255,255,0.05);
+      box-shadow: 0 0 10px var(--slot-color, transparent);
+    }
+    .drop-slot.slot--filled .slot-hint { display: none; }
+    .drop-slot.slot--remove-word {
+      cursor: pointer;
+    }
+    .word-bank {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      padding: 1rem;
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      margin-bottom: 0.75rem;
+    }
+    .word-bank-label {
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .bonus-banner {
+      background: linear-gradient(135deg, var(--color-gold), #E17055);
+      color: #1A1A2E;
+      border-radius: 30px;
+      padding: 0.4rem 1.5rem;
+      font-weight: 900;
+      font-size: 1.1rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 0 20px rgba(249,202,36,0.5);
+      animation: pulseBorder 1.5s ease-in-out infinite;
+    }
+    .c3-sentence-preview {
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      text-align: center;
+      color: var(--color-text-muted);
+      margin: 0.3rem 0;
+      min-height: 1.8rem;
+      font-style: italic;
+    }
+
+    /* ============================================================
+       OVERLAY (tier complete, sentence complete, etc.)
+    ============================================================ */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26,26,46,0.88);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      backdrop-filter: blur(4px);
+    }
+    .overlay-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      text-align: center;
+      max-width: 380px;
+      width: 90%;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .overlay-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+    .overlay-card h2 { margin-bottom: 0.5rem; }
+    .overlay-card p { color: var(--color-text-muted); margin-bottom: 1rem; }
+
+    /* ============================================================
+       RESULTS SCREEN
+    ============================================================ */
+    #screen-results {
+      background: radial-gradient(ellipse at 50% 0%, #0F3460 0%, #1A1A2E 70%);
+    }
+    .results-card {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      max-width: 480px;
+      width: 100%;
+    }
+    .stars-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+    .star {
+      font-size: clamp(2.5rem, 8vw, 4rem);
+      opacity: 0;
+      transform: scale(0);
+    }
+    .score-final-box {
+      background: var(--color-surface2);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.5rem;
+      margin: 1rem 0;
+    }
+    .score-final-label { font-size: 0.85rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .score-final-number { font-size: clamp(2rem, 6vw, 3rem); font-weight: 900; }
+    .results-message { color: var(--color-text-muted); margin-bottom: 1.2rem; font-size: 1rem; }
+    .results-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+  </style>
 </head>
 <body>
-  <!-- Game content coming soon -->
+
+  <!-- ============================================================
+       SCREEN: HOME
+  ============================================================ -->
+  <div id="screen-home" class="screen screen--active">
+    <div class="screen-inner">
+      <div class="home-hero">
+        <h1>Soren's Grammar Adventure</h1>
+        <p>Pick a game and level up your grammar skills!</p>
+      </div>
+      <div class="game-cards">
+        <div class="game-card card--c1" onclick="startConcept(1)" role="button" tabindex="0" aria-label="Play Drag-and-Drop Sentence Lab">
+          <div class="game-card-icon">🏷️</div>
+          <h3>Sentence Lab</h3>
+          <p>Drag part-of-speech labels onto each word in a sentence. Unlock 3 levels of tricky sentences!</p>
+          <span class="game-card-badge" style="background:var(--color-verb);color:#1A1A2E;">Drag & Drop</span>
+        </div>
+        <div class="game-card card--c2" onclick="startConcept(2)" role="button" tabindex="0" aria-label="Play Tap-to-Color Hunt">
+          <div class="game-card-icon">🎯</div>
+          <h3>Word Hunt</h3>
+          <p>You get a mission — find all the verbs! Tap each matching word before the timer runs out.</p>
+          <span class="game-card-badge" style="background:var(--color-noun);color:#1A1A2E;">Tap to Play</span>
+        </div>
+        <div class="game-card card--c3" onclick="startConcept(3)" role="button" tabindex="0" aria-label="Play Build-a-Sentence Challenge">
+          <div class="game-card-icon">🧩</div>
+          <h3>Sentence Builder</h3>
+          <p>Follow the recipe! Drag words from the bank into the right slots to build a sentence.</p>
+          <span class="game-card-badge" style="background:var(--color-adjective);color:#1A1A2E;">Build It</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN: CONCEPT 1 — SENTENCE LAB
+  ============================================================ -->
+  <div id="screen-concept1" class="screen">
+    <div class="game-header">
+      <div class="game-header-left">
+        <button class="btn btn--ghost" onclick="goHome()" aria-label="Go home">← Home</button>
+        <span id="c1-tier-badge" class="tier-badge">Level 1</span>
+      </div>
+      <div class="game-header-right">
+        <span id="c1-score" class="score-display">0 pts</span>
+        <span id="c1-timer" class="score-display" style="color:var(--color-verb);">0:00</span>
+      </div>
+    </div>
+    <div class="screen-inner">
+      <div class="progress-dots" id="c1-progress-dots"></div>
+      <p class="c1-sentence-ref" id="c1-sentence-ref"></p>
+      <div class="tile-row" id="c1-tile-row" aria-label="Word tiles — drop a label onto each word"></div>
+      <div class="pos-palette" id="c1-palette">
+        <div class="palette-label">Drag a label onto each word</div>
+      </div>
+      <div class="hint-text" id="c1-hint" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN: CONCEPT 2 — TAP-TO-COLOR HUNT
+  ============================================================ -->
+  <div id="screen-concept2" class="screen">
+    <div class="game-header" id="c2-header" style="display:none">
+      <div class="game-header-left">
+        <button class="btn btn--ghost" onclick="endC2Mission()" aria-label="Back to missions">← Missions</button>
+        <span id="c2-mission-label" class="c2-mission-label"></span>
+      </div>
+      <div class="game-header-right">
+        <span id="c2-streak" class="streak-display">🔥 0</span>
+        <span id="c2-score" class="score-display">0 pts</span>
+        <span id="c2-timer" class="timer-pill">60</span>
+      </div>
+    </div>
+    <div class="screen-inner">
+      <div style="text-align:center;padding:0.5rem 0 0.25rem">
+        <button class="btn btn--ghost" onclick="goHome()" style="display:inline-flex;margin-bottom:0.5rem" id="c2-home-btn">← Home</button>
+        <h2>Word Hunt</h2>
+        <p style="color:var(--color-text-muted);margin-top:0.25rem">Choose your mission:</p>
+      </div>
+      <div class="mission-picker" id="c2-mission-picker"></div>
+      <div class="c2-game-area" id="c2-game-area">
+        <div class="c2-found-counter" id="c2-found-counter"></div>
+        <div class="c2-sentence" id="c2-sentence" aria-label="Sentence — tap matching words"></div>
+        <div class="c2-progress-text" id="c2-progress-text"></div>
+        <div class="hint-text" id="c2-hint" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN: CONCEPT 3 — BUILD-A-SENTENCE
+  ============================================================ -->
+  <div id="screen-concept3" class="screen">
+    <div class="game-header">
+      <div class="game-header-left">
+        <button class="btn btn--ghost" onclick="goHome()" aria-label="Go home">← Home</button>
+        <span id="c3-recipe-num" class="tier-badge">Recipe 1 of 5</span>
+      </div>
+      <div class="game-header-right">
+        <span id="c3-score" class="score-display">0 pts</span>
+      </div>
+    </div>
+    <div class="screen-inner">
+      <div id="c3-bonus-banner" class="bonus-banner" style="display:none">⭐ BONUS ROUND! ⭐</div>
+      <h3 style="text-align:center;margin-bottom:0.3rem;color:var(--color-text-muted)">Build this type of sentence:</h3>
+      <div class="recipe-strip" id="c3-recipe-strip"></div>
+      <div class="drop-slots" id="c3-drop-slots" aria-label="Drop words into these slots"></div>
+      <p class="c3-sentence-preview" id="c3-sentence-preview">Your sentence will appear here</p>
+      <div class="word-bank" id="c3-word-bank">
+        <div class="word-bank-label">Word Bank — drag words to the slots above</div>
+      </div>
+      <div class="hint-text" id="c3-hint" aria-live="polite"></div>
+      <button id="c3-submit" class="btn btn--primary" onclick="checkC3Answer()" disabled style="margin-top:0.5rem">Check My Sentence!</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN: RESULTS
+  ============================================================ -->
+  <div id="screen-results" class="screen">
+    <div class="screen-inner" style="justify-content:center">
+      <div class="results-card">
+        <div style="font-size:3rem;margin-bottom:0.5rem" id="results-icon">🎉</div>
+        <h2 id="results-title">Well done!</h2>
+        <div class="stars-row" id="results-stars" aria-label="Stars earned"></div>
+        <div class="score-final-box">
+          <div class="score-final-label">Final Score</div>
+          <div class="score-final-number" id="results-score-display">0</div>
+        </div>
+        <p class="results-message" id="results-message"></p>
+        <div class="results-actions">
+          <button class="btn btn--primary" onclick="replayGame()">Play Again</button>
+          <button class="btn btn--ghost" onclick="goHome()">Home</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================================
+       SECTION 1: CONTENT DATA
+    ============================================================ */
+    const CONTENT = {
+      concept1: {
+        tiers: [
+          {
+            label: 'Level 1',
+            sentences: [
+              { tokens: [{ word:'The',pos:'article'},{ word:'dog',pos:'noun'},{ word:'barked',pos:'verb'},{ word:'loudly',pos:'adverb'}] },
+              { tokens: [{ word:'She',pos:'pronoun'},{ word:'runs',pos:'verb'},{ word:'fast',pos:'adverb'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'red',pos:'adjective'},{ word:'bird',pos:'noun'},{ word:'sings',pos:'verb'}] },
+              { tokens: [{ word:'Happy',pos:'adjective'},{ word:'children',pos:'noun'},{ word:'laugh',pos:'verb'},{ word:'often',pos:'adverb'}] },
+              { tokens: [{ word:'He',pos:'pronoun'},{ word:'quickly',pos:'adverb'},{ word:'finished',pos:'verb'},{ word:'his',pos:'adjective'},{ word:'homework',pos:'noun'}] }
+            ]
+          },
+          {
+            label: 'Level 2',
+            sentences: [
+              { tokens: [{ word:'The',pos:'article'},{ word:'brave',pos:'adjective'},{ word:'knight',pos:'noun'},{ word:'fought',pos:'verb'},{ word:'and',pos:'conjunction'},{ word:'won',pos:'verb'}] },
+              { tokens: [{ word:'Cats',pos:'noun'},{ word:'and',pos:'conjunction'},{ word:'dogs',pos:'noun'},{ word:'often',pos:'adverb'},{ word:'play',pos:'verb'},{ word:'outside',pos:'adverb'}] },
+              { tokens: [{ word:'She',pos:'pronoun'},{ word:'sang',pos:'verb'},{ word:'beautifully',pos:'adverb'},{ word:'but',pos:'conjunction'},{ word:'he',pos:'pronoun'},{ word:'danced',pos:'verb'},{ word:'awkwardly',pos:'adverb'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'tiny',pos:'adjective'},{ word:'kitten',pos:'noun'},{ word:'slept',pos:'verb'},{ word:'and',pos:'conjunction'},{ word:'purred',pos:'verb'}] },
+              { tokens: [{ word:'My',pos:'adjective'},{ word:'older',pos:'adjective'},{ word:'sister',pos:'noun'},{ word:'reads',pos:'verb'},{ word:'or',pos:'conjunction'},{ word:'draws',pos:'verb'},{ word:'daily',pos:'adverb'}] }
+            ]
+          },
+          {
+            label: 'Level 3',
+            sentences: [
+              { tokens: [{ word:'The',pos:'article'},{ word:'cat',pos:'noun'},{ word:'slept',pos:'verb'},{ word:'under',pos:'preposition'},{ word:'the',pos:'article'},{ word:'warm',pos:'adjective'},{ word:'blanket',pos:'noun'}] },
+              { tokens: [{ word:'She',pos:'pronoun'},{ word:'ran',pos:'verb'},{ word:'through',pos:'preposition'},{ word:'the',pos:'article'},{ word:'dark',pos:'adjective'},{ word:'forest',pos:'noun'},{ word:'quickly',pos:'adverb'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'old',pos:'adjective'},{ word:'book',pos:'noun'},{ word:'fell',pos:'verb'},{ word:'off',pos:'preposition'},{ word:'the',pos:'article'},{ word:'dusty',pos:'adjective'},{ word:'shelf',pos:'noun'}] },
+              { tokens: [{ word:'He',pos:'pronoun'},{ word:'jumped',pos:'verb'},{ word:'over',pos:'preposition'},{ word:'the',pos:'article'},{ word:'small',pos:'adjective'},{ word:'puddle',pos:'noun'},{ word:'carefully',pos:'adverb'}] },
+              { tokens: [{ word:'Birds',pos:'noun'},{ word:'sing',pos:'verb'},{ word:'joyfully',pos:'adverb'},{ word:'from',pos:'preposition'},{ word:'the',pos:'article'},{ word:'tall',pos:'adjective'},{ word:'trees',pos:'noun'}] }
+            ]
+          }
+        ]
+      },
+      concept2: {
+        missions: [
+          {
+            pos: 'verb', label: 'Find all the VERBS!', icon: '⚡',
+            sentences: [
+              { tokens: [{ word:'The',pos:'article'},{ word:'wizard',pos:'noun'},{ word:'conjured',pos:'verb'},{ word:'a',pos:'article'},{ word:'glowing',pos:'adjective'},{ word:'spell',pos:'noun'}] },
+              { tokens: [{ word:'She',pos:'pronoun'},{ word:'baked',pos:'verb'},{ word:'twelve',pos:'adjective'},{ word:'golden',pos:'adjective'},{ word:'cookies',pos:'noun'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'rocket',pos:'noun'},{ word:'launched',pos:'verb'},{ word:'and',pos:'conjunction'},{ word:'soared',pos:'verb'},{ word:'overhead',pos:'adverb'}] },
+              { tokens: [{ word:'My',pos:'adjective'},{ word:'brother',pos:'noun'},{ word:'tripped',pos:'verb'},{ word:'and',pos:'conjunction'},{ word:'stumbled',pos:'verb'},{ word:'comically',pos:'adverb'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'team',pos:'noun'},{ word:'trained',pos:'verb'},{ word:'hard',pos:'adverb'},{ word:'and',pos:'conjunction'},{ word:'won',pos:'verb'}] },
+              { tokens: [{ word:'Dogs',pos:'noun'},{ word:'fetch',pos:'verb'},{ word:'bright',pos:'adjective'},{ word:'yellow',pos:'adjective'},{ word:'balls',pos:'noun'}] },
+              { tokens: [{ word:'He',pos:'pronoun'},{ word:'reads',pos:'verb'},{ word:'slowly',pos:'adverb'},{ word:'but',pos:'conjunction'},{ word:'remembers',pos:'verb'},{ word:'everything',pos:'noun'}] }
+            ]
+          },
+          {
+            pos: 'noun', label: 'Find all the NOUNS!', icon: '🐉',
+            sentences: [
+              { tokens: [{ word:'The',pos:'article'},{ word:'dragon',pos:'noun'},{ word:'breathed',pos:'verb'},{ word:'bright',pos:'adjective'},{ word:'fire',pos:'noun'}] },
+              { tokens: [{ word:'A',pos:'article'},{ word:'tiny',pos:'adjective'},{ word:'robot',pos:'noun'},{ word:'cleaned',pos:'verb'},{ word:'the',pos:'article'},{ word:'kitchen',pos:'noun'}] },
+              { tokens: [{ word:'My',pos:'adjective'},{ word:'teacher',pos:'noun'},{ word:'loves',pos:'verb'},{ word:'science',pos:'noun'},{ word:'and',pos:'conjunction'},{ word:'math',pos:'noun'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'mountain',pos:'noun'},{ word:'was',pos:'verb'},{ word:'covered',pos:'verb'},{ word:'in',pos:'preposition'},{ word:'snow',pos:'noun'}] },
+              { tokens: [{ word:'A',pos:'article'},{ word:'clever',pos:'adjective'},{ word:'fox',pos:'noun'},{ word:'outwitted',pos:'verb'},{ word:'the',pos:'article'},{ word:'hunter',pos:'noun'}] },
+              { tokens: [{ word:'Pizza',pos:'noun'},{ word:'and',pos:'conjunction'},{ word:'tacos',pos:'noun'},{ word:'are',pos:'verb'},{ word:'my',pos:'adjective'},{ word:'favorite',pos:'adjective'},{ word:'foods',pos:'noun'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'captain',pos:'noun'},{ word:'steered',pos:'verb'},{ word:'the',pos:'article'},{ word:'ship',pos:'noun'},{ word:'carefully',pos:'adverb'}] }
+            ]
+          },
+          {
+            pos: 'adjective', label: 'Find all the ADJECTIVES!', icon: '🎨',
+            sentences: [
+              { tokens: [{ word:'The',pos:'article'},{ word:'fluffy',pos:'adjective'},{ word:'white',pos:'adjective'},{ word:'bunny',pos:'noun'},{ word:'hopped',pos:'verb'}] },
+              { tokens: [{ word:'A',pos:'article'},{ word:'spooky',pos:'adjective'},{ word:'old',pos:'adjective'},{ word:'house',pos:'noun'},{ word:'stood',pos:'verb'},{ word:'alone',pos:'adverb'}] },
+              { tokens: [{ word:'She',pos:'pronoun'},{ word:'wore',pos:'verb'},{ word:'a',pos:'article'},{ word:'sparkly',pos:'adjective'},{ word:'purple',pos:'adjective'},{ word:'cape',pos:'noun'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'sneaky',pos:'adjective'},{ word:'fox',pos:'noun'},{ word:'stole',pos:'verb'},{ word:'three',pos:'adjective'},{ word:'golden',pos:'adjective'},{ word:'eggs',pos:'noun'}] },
+              { tokens: [{ word:'A',pos:'article'},{ word:'bright',pos:'adjective'},{ word:'red',pos:'adjective'},{ word:'balloon',pos:'noun'},{ word:'floated',pos:'verb'},{ word:'high',pos:'adverb'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'clumsy',pos:'adjective'},{ word:'penguin',pos:'noun'},{ word:'slipped',pos:'verb'},{ word:'on',pos:'preposition'},{ word:'icy',pos:'adjective'},{ word:'ground',pos:'noun'}] },
+              { tokens: [{ word:'An',pos:'article'},{ word:'enormous',pos:'adjective'},{ word:'friendly',pos:'adjective'},{ word:'giant',pos:'noun'},{ word:'waved',pos:'verb'},{ word:'cheerfully',pos:'adverb'}] }
+            ]
+          },
+          {
+            pos: 'adverb', label: 'Find all the ADVERBS!', icon: '💨',
+            sentences: [
+              { tokens: [{ word:'The',pos:'article'},{ word:'turtle',pos:'noun'},{ word:'moved',pos:'verb'},{ word:'slowly',pos:'adverb'},{ word:'and',pos:'conjunction'},{ word:'steadily',pos:'adverb'}] },
+              { tokens: [{ word:'She',pos:'pronoun'},{ word:'whispered',pos:'verb'},{ word:'softly',pos:'adverb'},{ word:'into',pos:'preposition'},{ word:'the',pos:'article'},{ word:'phone',pos:'noun'}] },
+              { tokens: [{ word:'He',pos:'pronoun'},{ word:'laughed',pos:'verb'},{ word:'loudly',pos:'adverb'},{ word:'and',pos:'conjunction'},{ word:'clapped',pos:'verb'},{ word:'wildly',pos:'adverb'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'dog',pos:'noun'},{ word:'barked',pos:'verb'},{ word:'constantly',pos:'adverb'},{ word:'yesterday',pos:'adverb'}] },
+              { tokens: [{ word:'She',pos:'pronoun'},{ word:'quickly',pos:'adverb'},{ word:'finished',pos:'verb'},{ word:'her',pos:'adjective'},{ word:'homework',pos:'noun'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'chef',pos:'noun'},{ word:'carefully',pos:'adverb'},{ word:'sliced',pos:'verb'},{ word:'the',pos:'article'},{ word:'vegetables',pos:'noun'}] },
+              { tokens: [{ word:'They',pos:'pronoun'},{ word:'always',pos:'adverb'},{ word:'arrive',pos:'verb'},{ word:'terribly',pos:'adverb'},{ word:'late',pos:'adverb'}] }
+            ]
+          },
+          {
+            pos: 'preposition', label: 'Find all the PREPOSITIONS!', icon: '📍',
+            sentences: [
+              { tokens: [{ word:'The',pos:'article'},{ word:'cat',pos:'noun'},{ word:'hid',pos:'verb'},{ word:'under',pos:'preposition'},{ word:'the',pos:'article'},{ word:'bed',pos:'noun'}] },
+              { tokens: [{ word:'She',pos:'pronoun'},{ word:'walked',pos:'verb'},{ word:'through',pos:'preposition'},{ word:'the',pos:'article'},{ word:'park',pos:'noun'},{ word:'at',pos:'preposition'},{ word:'dusk',pos:'noun'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'ball',pos:'noun'},{ word:'rolled',pos:'verb'},{ word:'off',pos:'preposition'},{ word:'the',pos:'article'},{ word:'table',pos:'noun'}] },
+              { tokens: [{ word:'He',pos:'pronoun'},{ word:'climbed',pos:'verb'},{ word:'over',pos:'preposition'},{ word:'the',pos:'article'},{ word:'fence',pos:'noun'},{ word:'into',pos:'preposition'},{ word:'the',pos:'article'},{ word:'yard',pos:'noun'}] },
+              { tokens: [{ word:'The',pos:'article'},{ word:'book',pos:'noun'},{ word:'was',pos:'verb'},{ word:'beside',pos:'preposition'},{ word:'the',pos:'article'},{ word:'lamp',pos:'noun'}] },
+              { tokens: [{ word:'They',pos:'pronoun'},{ word:'sailed',pos:'verb'},{ word:'across',pos:'preposition'},{ word:'the',pos:'article'},{ word:'ocean',pos:'noun'},{ word:'toward',pos:'preposition'},{ word:'land',pos:'noun'}] },
+              { tokens: [{ word:'A',pos:'article'},{ word:'spider',pos:'noun'},{ word:'dangled',pos:'verb'},{ word:'from',pos:'preposition'},{ word:'its',pos:'adjective'},{ word:'web',pos:'noun'},{ word:'above',pos:'preposition'},{ word:'us',pos:'pronoun'}] }
+            ]
+          }
+        ]
+      },
+      concept3: {
+        recipes: [
+          {
+            id: 'r1',
+            slots: [
+              { pos:'article',    label:'Article' },
+              { pos:'adjective',  label:'Adjective' },
+              { pos:'noun',       label:'Noun' },
+              { pos:'verb',       label:'Verb' },
+              { pos:'adverb',     label:'Adverb' }
+            ],
+            wordBank: [
+              { word:'A',        pos:'article' },
+              { word:'powerful', pos:'adjective' },
+              { word:'cheetah',  pos:'noun' },
+              { word:'sprinted', pos:'verb' },
+              { word:'quickly',  pos:'adverb' },
+              { word:'under',    pos:'preposition' },
+              { word:'tiny',     pos:'adjective' },
+              { word:'lazily',   pos:'adverb' }
+            ],
+            validWords: {
+              article:   ['A','The','a','the'],
+              adjective: ['powerful','tiny'],
+              noun:      ['cheetah'],
+              verb:      ['sprinted'],
+              adverb:    ['quickly','lazily']
+            }
+          },
+          {
+            id: 'r2',
+            slots: [
+              { pos:'pronoun',     label:'Pronoun' },
+              { pos:'verb',        label:'Verb' },
+              { pos:'preposition', label:'Preposition' },
+              { pos:'article',     label:'Article' },
+              { pos:'noun',        label:'Noun' }
+            ],
+            wordBank: [
+              { word:'She',    pos:'pronoun' },
+              { word:'danced', pos:'verb' },
+              { word:'on',     pos:'preposition' },
+              { word:'the',    pos:'article' },
+              { word:'stage',  pos:'noun' },
+              { word:'He',     pos:'pronoun' },
+              { word:'slowly', pos:'adverb' },
+              { word:'a',      pos:'article' }
+            ],
+            validWords: {
+              pronoun:     ['She','He'],
+              verb:        ['danced'],
+              preposition: ['on'],
+              article:     ['the','a'],
+              noun:        ['stage']
+            }
+          },
+          {
+            id: 'r3',
+            slots: [
+              { pos:'article',     label:'Article' },
+              { pos:'noun',        label:'Noun' },
+              { pos:'conjunction', label:'Conjunction' },
+              { pos:'article',     label:'Article' },
+              { pos:'noun',        label:'Noun' },
+              { pos:'verb',        label:'Verb' }
+            ],
+            wordBank: [
+              { word:'The',    pos:'article' },
+              { word:'fox',    pos:'noun' },
+              { word:'and',    pos:'conjunction' },
+              { word:'the',    pos:'article' },
+              { word:'rabbit', pos:'noun' },
+              { word:'raced',  pos:'verb' },
+              { word:'but',    pos:'conjunction' },
+              { word:'slowly', pos:'adverb' },
+              { word:'cat',    pos:'noun' }
+            ],
+            validWords: {
+              article:     ['The','the','A','a'],
+              noun:        ['fox','rabbit','cat'],
+              conjunction: ['and','but'],
+              verb:        ['raced']
+            }
+          },
+          {
+            id: 'r4',
+            slots: [
+              { pos:'adjective', label:'Adjective' },
+              { pos:'noun',      label:'Noun' },
+              { pos:'verb',      label:'Verb' },
+              { pos:'adverb',    label:'Adverb' }
+            ],
+            wordBank: [
+              { word:'Silly',   pos:'adjective' },
+              { word:'clowns',  pos:'noun' },
+              { word:'juggle',  pos:'verb' },
+              { word:'wildly',  pos:'adverb' },
+              { word:'quietly', pos:'adverb' },
+              { word:'Grumpy',  pos:'adjective' },
+              { word:'dance',   pos:'verb' }
+            ],
+            validWords: {
+              adjective: ['Silly','Grumpy'],
+              noun:      ['clowns'],
+              verb:      ['juggle','dance'],
+              adverb:    ['wildly','quietly']
+            }
+          },
+          {
+            id: 'r5',
+            isBonusRound: true,
+            slots: [
+              { pos:'article',     label:'Article' },
+              { pos:'adjective',   label:'Adjective' },
+              { pos:'noun',        label:'Noun' },
+              { pos:'verb',        label:'Verb' },
+              { pos:'preposition', label:'Preposition' },
+              { pos:'article',     label:'Article' },
+              { pos:'noun',        label:'Noun' }
+            ],
+            wordBank: [
+              { word:'A',       pos:'article' },
+              { word:'purple',  pos:'adjective' },
+              { word:'penguin', pos:'noun' },
+              { word:'zoomed',  pos:'verb' },
+              { word:'into',    pos:'preposition' },
+              { word:'the',     pos:'article' },
+              { word:'library', pos:'noun' },
+              { word:'tiptoed', pos:'verb' },
+              { word:'spotted', pos:'adjective' },
+              { word:'a',       pos:'article' }
+            ],
+            validWords: {
+              article:     ['A','a','The','the'],
+              adjective:   ['purple','spotted'],
+              noun:        ['penguin','library'],
+              verb:        ['zoomed','tiptoed'],
+              preposition: ['into']
+            }
+          }
+        ]
+      }
+    };
+
+    /* ============================================================
+       SECTION 2: POS METADATA
+    ============================================================ */
+    const POS_META = {
+      noun:        { label:'Noun',        color:'#FF6B6B', bg:'rgba(255,107,107,0.15)', hint:'a person, place, or thing' },
+      verb:        { label:'Verb',        color:'#4ECDC4', bg:'rgba(78,205,196,0.15)',  hint:'an action or state of being' },
+      adjective:   { label:'Adjective',   color:'#FFE66D', bg:'rgba(255,230,109,0.15)', hint:'describes a noun' },
+      adverb:      { label:'Adverb',      color:'#A29BFE', bg:'rgba(162,155,254,0.15)', hint:'describes a verb or adjective' },
+      article:     { label:'Article',     color:'#74B9FF', bg:'rgba(116,185,255,0.15)', hint:'"a", "an", or "the"' },
+      pronoun:     { label:'Pronoun',     color:'#FD79A8', bg:'rgba(253,121,168,0.15)', hint:'replaces a noun (I, she, they…)' },
+      preposition: { label:'Preposition', color:'#55EFC4', bg:'rgba(85,239,196,0.15)',  hint:'shows location or relationship' },
+      conjunction: { label:'Conjunction', color:'#FDCB6E', bg:'rgba(253,203,110,0.15)', hint:'connects words or clauses' }
+    };
+
+    /* ============================================================
+       SECTION 3: STATE
+    ============================================================ */
+    const STATE = {
+      currentScreen: 'home',
+      activeConcept: null,
+      lastScore: 0,
+      lastMaxScore: 0,
+      c1: { tier:0, sentenceIndex:0, score:0, startTime:null, totalPenalties:0, labeled:{} },
+      c2: { missionIndex:0, sentenceIndex:0, score:0, streak:0, timerStartTime:null, timerInterval:null },
+      c3: { recipeIndex:0, slotContents:{}, score:0, slotAttempts:{} }
+    };
+
+    /* ============================================================
+       SECTION 4: UTILITIES
+    ============================================================ */
+    function animate(el, cls, ms = 500) {
+      if (!el) return;
+      el.classList.remove(cls);
+      void el.offsetWidth;
+      el.classList.add(cls);
+      setTimeout(() => el.classList.remove(cls), ms);
+    }
+
+    function showFloatingPoints(x, y, text, color) {
+      const el = document.createElement('div');
+      el.className = 'floating-points';
+      el.textContent = text;
+      el.style.color = color;
+      el.style.left = x + 'px';
+      el.style.top  = y + 'px';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1300);
+    }
+
+    function animateScoreCount(el, from, to, duration = 1200) {
+      if (!el) return;
+      const start = performance.now();
+      function tick(now) {
+        const t = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = Math.round(from + (to - from) * eased);
+        if (t < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function showHint(text, elId) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      el.textContent = text;
+      setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 3000);
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    /* ============================================================
+       SECTION 5: DRAG-AND-DROP ENGINE (Pointer Events)
+    ============================================================ */
+    const DragEngine = {
+      dragging: null,
+
+      init() {
+        document.addEventListener('pointermove',   this.onPointerMove.bind(this));
+        document.addEventListener('pointerup',     this.onPointerUp.bind(this));
+        document.addEventListener('pointercancel', this.onPointerCancel.bind(this));
+      },
+
+      makeDraggable(element, data) {
+        element._dragData = data;
+        element.addEventListener('pointerdown', (e) => this.onPointerDown(e, element));
+        element.style.touchAction = 'none';
+        element.style.userSelect  = 'none';
+      },
+
+      makeDropTarget(element, acceptedPOS, onDropFn) {
+        element._dropAccepts = acceptedPOS;
+        element._onDrop      = onDropFn;
+        element.classList.add('drop-target');
+      },
+
+      onPointerDown(e, element) {
+        if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
+        e.preventDefault();
+
+        const rect   = element.getBoundingClientRect();
+        const ghost  = element.cloneNode(true);
+        ghost.className = element.className + ' drag-ghost';
+        ghost.style.cssText = `
+          position:fixed;pointer-events:none;z-index:9999;
+          width:${rect.width}px;height:${rect.height}px;
+          left:${rect.left}px;top:${rect.top}px;
+          opacity:0.9;transform:scale(1.08) rotate(2deg);
+          box-shadow:0 8px 30px rgba(0,0,0,0.5);
+        `;
+        document.body.appendChild(ghost);
+        element.style.opacity = '0.35';
+
+        this.dragging = {
+          element,
+          ghost,
+          data: element._dragData,
+          offsetX: e.clientX - rect.left,
+          offsetY: e.clientY - rect.top
+        };
+
+        try { element.setPointerCapture(e.pointerId); } catch(_) {}
+      },
+
+      onPointerMove(e) {
+        if (!this.dragging) return;
+        const { ghost, offsetX, offsetY } = this.dragging;
+        ghost.style.left = (e.clientX - offsetX) + 'px';
+        ghost.style.top  = (e.clientY - offsetY) + 'px';
+        this.updateDropHighlight(e.clientX, e.clientY);
+      },
+
+      onPointerUp(e) {
+        if (!this.dragging) return;
+        const { element, ghost, data } = this.dragging;
+
+        ghost.style.display = 'none';
+        const target = document.elementFromPoint(e.clientX, e.clientY);
+        ghost.style.display = '';
+
+        const dropZone = target && (
+          target.classList.contains('drop-target') ? target :
+          target.closest('.drop-target')
+        );
+
+        if (dropZone && dropZone._onDrop) {
+          dropZone._onDrop(data, dropZone, e.clientX, e.clientY, element);
+        }
+
+        ghost.remove();
+        element.style.opacity = '1';
+        this.clearDropHighlight();
+        this.dragging = null;
+      },
+
+      onPointerCancel() {
+        if (!this.dragging) return;
+        this.dragging.ghost.remove();
+        this.dragging.element.style.opacity = '1';
+        this.clearDropHighlight();
+        this.dragging = null;
+      },
+
+      updateDropHighlight(x, y) {
+        document.querySelectorAll('.drop-target').forEach(el => {
+          const r    = el.getBoundingClientRect();
+          const over = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+          el.classList.toggle('drop-target--hover', over);
+        });
+      },
+
+      clearDropHighlight() {
+        document.querySelectorAll('.drop-target--hover').forEach(el => el.classList.remove('drop-target--hover'));
+      }
+    };
+
+    /* ============================================================
+       SECTION 6: SCREEN ROUTER
+    ============================================================ */
+    function navigateTo(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('screen--active'));
+      const s = document.getElementById('screen-' + screenId);
+      if (s) s.classList.add('screen--active');
+      STATE.currentScreen = screenId;
+    }
+
+    function goHome() {
+      if (STATE.c2.timerInterval) { clearInterval(STATE.c2.timerInterval); STATE.c2.timerInterval = null; }
+      endC2Mission(true);
+      navigateTo('home');
+    }
+
+    function startConcept(n) {
+      STATE.activeConcept = n;
+      if (n === 1) initConcept1();
+      else if (n === 2) initConcept2();
+      else if (n === 3) initConcept3();
+    }
+
+    /* ============================================================
+       SECTION 7: CONCEPT 1 — SENTENCE LAB
+    ============================================================ */
+    function initConcept1() {
+      STATE.c1 = { tier:0, sentenceIndex:0, score:0, startTime:Date.now(), totalPenalties:0, labeled:{} };
+      navigateTo('concept1');
+      renderC1Sentence();
+    }
+
+    function renderC1Sentence() {
+      const tier     = CONTENT.concept1.tiers[STATE.c1.tier];
+      const sentence = tier.sentences[STATE.c1.sentenceIndex];
+      STATE.c1.labeled = {};
+
+      document.getElementById('c1-tier-badge').textContent = tier.label;
+      document.getElementById('c1-sentence-ref').textContent =
+        sentence.tokens.map(t => t.word).join(' ');
+      document.getElementById('c1-hint').textContent = '';
+      updateC1Score();
+      renderC1ProgressDots();
+      renderC1Tiles(sentence);
+      renderC1Palette();
+      STATE.c1.startTime = Date.now();
+    }
+
+    function renderC1ProgressDots() {
+      const tier  = CONTENT.concept1.tiers[STATE.c1.tier];
+      const dots  = document.getElementById('c1-progress-dots');
+      dots.innerHTML = '';
+      tier.sentences.forEach((_, i) => {
+        const d = document.createElement('div');
+        d.className = 'progress-dot' +
+          (i < STATE.c1.sentenceIndex ? ' dot--done' :
+           i === STATE.c1.sentenceIndex ? ' dot--active' : '');
+        dots.appendChild(d);
+      });
+    }
+
+    function renderC1Tiles(sentence) {
+      const row = document.getElementById('c1-tile-row');
+      row.innerHTML = '';
+      sentence.tokens.forEach((token, i) => {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.dataset.index = i;
+        tile.dataset.pos   = token.pos;
+        tile.innerHTML = `<span class="tile-word">${token.word}</span><span class="tile-label"></span>`;
+        tile.setAttribute('tabindex', '0');
+        tile.setAttribute('aria-label', `Word: ${token.word}`);
+        DragEngine.makeDropTarget(tile, [token.pos], (data, target, x, y) => {
+          onC1BadgeDropped(data, target, x, y, i, token);
+        });
+        setTimeout(() => animate(tile, 'anim-float-in'), i * 60);
+        row.appendChild(tile);
+      });
+    }
+
+    function renderC1Palette() {
+      const palette = document.getElementById('c1-palette');
+      palette.innerHTML = '<div class="palette-label">Drag a label onto each word</div>';
+      Object.entries(POS_META).forEach(([pos, meta]) => {
+        const badge = document.createElement('div');
+        badge.className = 'pos-badge';
+        badge.textContent = meta.label;
+        badge.style.background = meta.color;
+        badge.style.color      = '#1A1A2E';
+        badge.setAttribute('aria-label', `${meta.label}: ${meta.hint}`);
+        DragEngine.makeDraggable(badge, { type:'badge', pos });
+        palette.appendChild(badge);
+      });
+    }
+
+    function onC1BadgeDropped(data, target, x, y, index, token) {
+      if (target.classList.contains('tile--labeled')) return;
+      const correct = data.pos === token.pos;
+
+      if (correct) {
+        const meta = POS_META[data.pos];
+        target.classList.add('tile--labeled');
+        target.style.setProperty('--label-color', meta.color);
+        target.querySelector('.tile-label').textContent = meta.label;
+        target.querySelector('.tile-label').style.color = meta.color;
+        animate(target, 'anim-lock-in', 450);
+        showFloatingPoints(x, y - 30, '+100', meta.color);
+        const elapsed   = (Date.now() - STATE.c1.startTime) / 1000;
+        const timeBonus = Math.max(0, Math.round(30 - elapsed) * 2);
+        const penalty   = STATE.c1.labeled[index] ? 0 : STATE.c1.totalPenalties * 10;
+        STATE.c1.score += Math.max(50, 100 + timeBonus - penalty);
+        STATE.c1.labeled[index] = true;
+        updateC1Score();
+        checkC1SentenceComplete();
+      } else {
+        const expectedMeta = POS_META[token.pos];
+        animate(target, 'anim-flash-wrong', 450);
+        STATE.c1.totalPenalties++;
+        showHint(`Hint: That word is a ${expectedMeta.label} — ${expectedMeta.hint}`, 'c1-hint');
+      }
+    }
+
+    function checkC1SentenceComplete() {
+      const tier     = CONTENT.concept1.tiers[STATE.c1.tier];
+      const sentence = tier.sentences[STATE.c1.sentenceIndex];
+      const labeled  = document.querySelectorAll('#c1-tile-row .tile--labeled');
+      if (labeled.length < sentence.tokens.length) return;
+
+      setTimeout(() => advanceC1Sentence(), 900);
+    }
+
+    function advanceC1Sentence() {
+      const tier = CONTENT.concept1.tiers[STATE.c1.tier];
+      STATE.c1.sentenceIndex++;
+      STATE.c1.totalPenalties = 0;
+
+      if (STATE.c1.sentenceIndex >= tier.sentences.length) {
+        STATE.c1.sentenceIndex = 0;
+        STATE.c1.tier++;
+        if (STATE.c1.tier >= CONTENT.concept1.tiers.length) {
+          showResults(1, STATE.c1.score, 15 * 120 + 15 * 60);
+          return;
+        }
+        showTierComplete(STATE.c1.tier);
+      } else {
+        renderC1Sentence();
+      }
+    }
+
+    function showTierComplete(newTier) {
+      const tier  = CONTENT.concept1.tiers[newTier];
+      const ov    = document.createElement('div');
+      ov.className = 'overlay';
+      ov.innerHTML = `
+        <div class="overlay-card anim-bounce-in">
+          <div class="overlay-icon">🎉</div>
+          <h2>Level Up!</h2>
+          <p>Next up: <strong>${tier.label}</strong> — sentences get trickier!</p>
+          <button class="btn btn--primary" id="tier-continue-btn">Keep Going!</button>
+        </div>`;
+      document.body.appendChild(ov);
+      document.getElementById('tier-continue-btn').onclick = () => {
+        ov.remove();
+        renderC1Sentence();
+      };
+    }
+
+    function updateC1Score() {
+      document.getElementById('c1-score').textContent = STATE.c1.score + ' pts';
+    }
+
+    /* ============================================================
+       SECTION 8: CONCEPT 2 — TAP-TO-COLOR HUNT
+    ============================================================ */
+    function initConcept2() {
+      navigateTo('concept2');
+      document.getElementById('c2-header').style.display = 'none';
+      document.getElementById('c2-home-btn').style.display = 'inline-flex';
+      document.getElementById('c2-mission-picker').style.display = 'grid';
+      const area = document.getElementById('c2-game-area');
+      area.classList.remove('c2--active');
+      renderMissionPicker();
+    }
+
+    function renderMissionPicker() {
+      const picker = document.getElementById('c2-mission-picker');
+      picker.innerHTML = '';
+      CONTENT.concept2.missions.forEach((m, i) => {
+        const meta = POS_META[m.pos];
+        const card = document.createElement('div');
+        card.className = 'mission-card';
+        card.style.borderColor = meta.color;
+        card.style.boxShadow   = `0 4px 15px ${meta.color}33`;
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', `Mission: ${m.label}`);
+        card.innerHTML = `
+          <div class="mission-card-icon">${m.icon}</div>
+          <h3 style="color:${meta.color}">${meta.label}s</h3>
+          <p style="font-size:0.8rem;color:var(--color-text-muted);margin-top:0.25rem">${m.sentences.length} sentences</p>`;
+        card.onclick = () => startC2Mission(i);
+        card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') startC2Mission(i); };
+        picker.appendChild(card);
+      });
+    }
+
+    function startC2Mission(index) {
+      STATE.c2 = { missionIndex:index, sentenceIndex:0, score:0, streak:0, timerStartTime:Date.now(), timerInterval:null };
+      document.getElementById('c2-mission-picker').style.display = 'none';
+      document.getElementById('c2-home-btn').style.display = 'none';
+      document.getElementById('c2-header').style.display = 'flex';
+
+      const mission = CONTENT.concept2.missions[index];
+      const meta    = POS_META[mission.pos];
+      const label   = document.getElementById('c2-mission-label');
+      label.textContent  = mission.label;
+      label.style.background = meta.color;
+      label.style.color      = '#1A1A2E';
+
+      const area = document.getElementById('c2-game-area');
+      area.classList.add('c2--active');
+
+      renderC2Sentence();
+      startC2Timer();
+    }
+
+    function renderC2Sentence() {
+      const mission  = CONTENT.concept2.missions[STATE.c2.missionIndex];
+      const sentence = mission.sentences[STATE.c2.sentenceIndex];
+      const meta     = POS_META[mission.pos];
+
+      document.getElementById('c2-progress-text').textContent =
+        `Sentence ${STATE.c2.sentenceIndex + 1} of ${mission.sentences.length}`;
+      document.getElementById('c2-hint').textContent = '';
+
+      const targets = sentence.tokens.filter(t => t.pos === mission.pos).length;
+      document.getElementById('c2-found-counter').innerHTML =
+        `<span style="color:${meta.color}">0/${targets}</span> ${meta.label}s found`;
+
+      const container = document.getElementById('c2-sentence');
+      container.innerHTML = '';
+
+      sentence.tokens.forEach((token, i) => {
+        const span = document.createElement('span');
+        span.className  = 'c2-word';
+        span.textContent = token.word;
+        span.setAttribute('tabindex', '0');
+        span.setAttribute('aria-label', `Word: ${token.word}`);
+        span.onclick    = () => onC2WordTapped(token, span, sentence, mission.pos);
+        span.onkeydown  = e => { if (e.key === 'Enter' || e.key === ' ') onC2WordTapped(token, span, sentence, mission.pos); };
+        setTimeout(() => animate(span, 'anim-float-in'), i * 50);
+        container.appendChild(span);
+      });
+    }
+
+    function onC2WordTapped(token, span, sentence, targetPos) {
+      if (span.classList.contains('word--already-tapped')) return;
+      const meta    = POS_META[targetPos];
+      const correct = token.pos === targetPos;
+
+      if (correct) {
+        span.classList.add('word--correct', 'word--already-tapped');
+        span.style.background = meta.color;
+        STATE.c2.streak++;
+        const bonus = Math.max(0, (STATE.c2.streak - 1) * 5);
+        STATE.c2.score += 10 + bonus;
+        if (bonus > 0) showHint(`🔥 Streak bonus! +${bonus}`, 'c2-hint');
+        updateC2Display();
+        updateC2FoundCounter(sentence, targetPos, meta);
+        checkC2SentenceComplete(sentence, targetPos);
+      } else {
+        animate(span, 'anim-flash-wrong', 400);
+        STATE.c2.score = Math.max(0, STATE.c2.score - 5);
+        STATE.c2.streak = 0;
+        updateC2Display();
+        const hint = POS_META[token.pos];
+        showHint(`That word is a ${hint.label} (${hint.hint})`, 'c2-hint');
+      }
+    }
+
+    function updateC2FoundCounter(sentence, targetPos, meta) {
+      const found = document.querySelectorAll('#c2-sentence .word--correct').length;
+      const total = sentence.tokens.filter(t => t.pos === targetPos).length;
+      document.getElementById('c2-found-counter').innerHTML =
+        `<span style="color:${meta.color}">${found}/${total}</span> ${meta.label}s found`;
+    }
+
+    function checkC2SentenceComplete(sentence, targetPos) {
+      const tapped = document.querySelectorAll('#c2-sentence .word--correct').length;
+      const needed = sentence.tokens.filter(t => t.pos === targetPos).length;
+      if (tapped < needed) return;
+
+      const mission = CONTENT.concept2.missions[STATE.c2.missionIndex];
+      STATE.c2.sentenceIndex++;
+      if (STATE.c2.sentenceIndex >= mission.sentences.length) {
+        endC2Mission(false);
+      } else {
+        setTimeout(() => renderC2Sentence(), 1000);
+      }
+    }
+
+    function startC2Timer() {
+      STATE.c2.timerStartTime = Date.now();
+      if (STATE.c2.timerInterval) clearInterval(STATE.c2.timerInterval);
+      STATE.c2.timerInterval = setInterval(() => {
+        const elapsed   = Math.floor((Date.now() - STATE.c2.timerStartTime) / 1000);
+        const remaining = Math.max(0, 60 - elapsed);
+        const timerEl   = document.getElementById('c2-timer');
+        if (timerEl) {
+          timerEl.textContent = remaining;
+          timerEl.classList.toggle('timer--urgent', remaining <= 10);
+        }
+        if (remaining <= 0) {
+          clearInterval(STATE.c2.timerInterval);
+          STATE.c2.timerInterval = null;
+          endC2Mission(false);
+        }
+      }, 500);
+    }
+
+    function updateC2Display() {
+      document.getElementById('c2-score').textContent  = STATE.c2.score + ' pts';
+      document.getElementById('c2-streak').textContent = '🔥 ' + STATE.c2.streak;
+    }
+
+    function endC2Mission(silent = false) {
+      if (STATE.c2.timerInterval) { clearInterval(STATE.c2.timerInterval); STATE.c2.timerInterval = null; }
+      if (silent) return;
+      const elapsed   = Math.floor((Date.now() - (STATE.c2.timerStartTime||Date.now())) / 1000);
+      const remaining = Math.max(0, 60 - elapsed);
+      STATE.c2.score  += remaining;
+      const maxScore   = CONTENT.concept2.missions[STATE.c2.missionIndex].sentences.length * 10 * 7 + 60;
+      showResults(2, STATE.c2.score, maxScore);
+    }
+
+    /* ============================================================
+       SECTION 9: CONCEPT 3 — BUILD-A-SENTENCE
+    ============================================================ */
+    function initConcept3() {
+      STATE.c3 = { recipeIndex:0, slotContents:{}, score:0, slotAttempts:{} };
+      navigateTo('concept3');
+      renderC3Recipe();
+    }
+
+    function renderC3Recipe() {
+      const recipe = CONTENT.concept3.recipes[STATE.c3.recipeIndex];
+      STATE.c3.slotContents = {};
+      STATE.c3.slotAttempts = {};
+
+      document.getElementById('c3-bonus-banner').style.display = recipe.isBonusRound ? 'block' : 'none';
+      document.getElementById('c3-recipe-num').textContent =
+        `Recipe ${STATE.c3.recipeIndex + 1} of ${CONTENT.concept3.recipes.length}`;
+      document.getElementById('c3-submit').disabled = true;
+      document.getElementById('c3-hint').textContent = '';
+      updateC3Score();
+      renderC3RecipeStrip(recipe);
+      renderC3Slots(recipe);
+      renderC3WordBank(recipe);
+      updateC3Preview();
+    }
+
+    function renderC3RecipeStrip(recipe) {
+      const strip = document.getElementById('c3-recipe-strip');
+      strip.innerHTML = '';
+      recipe.slots.forEach((slot, i) => {
+        if (i > 0) {
+          const plus = document.createElement('span');
+          plus.className   = 'recipe-plus';
+          plus.textContent = '+';
+          strip.appendChild(plus);
+        }
+        const meta  = POS_META[slot.pos];
+        const label = document.createElement('span');
+        label.className   = 'recipe-slot-label';
+        label.textContent = slot.label;
+        label.style.background = meta.color;
+        strip.appendChild(label);
+      });
+    }
+
+    function renderC3Slots(recipe) {
+      const container = document.getElementById('c3-drop-slots');
+      container.innerHTML = '';
+      recipe.slots.forEach((slot, i) => {
+        const meta = POS_META[slot.pos];
+        const div  = document.createElement('div');
+        div.className = 'drop-slot';
+        div.style.setProperty('--slot-color', meta.color);
+        div.dataset.index  = i;
+        div.dataset.pos    = slot.pos;
+        div.dataset.label  = slot.label;
+        div.setAttribute('aria-label', `Slot ${i+1}: ${slot.label}`);
+        div.innerHTML = `<span class="slot-hint">${slot.label}</span>`;
+        DragEngine.makeDropTarget(div, [slot.pos], (data, target, x, y, sourceEl) => {
+          onWordDroppedToSlot(data, target, x, y, sourceEl, recipe);
+        });
+        div.onclick = () => {
+          if (div.classList.contains('slot--filled') && div.dataset.word) {
+            returnWordToBank(div.dataset.word, div.dataset.wordPos, recipe);
+            clearSlot(div);
+          }
+        };
+        setTimeout(() => animate(div, 'anim-float-in'), i * 70);
+        container.appendChild(div);
+      });
+    }
+
+    function renderC3WordBank(recipe) {
+      const bank = document.getElementById('c3-word-bank');
+      bank.innerHTML = '<div class="word-bank-label">Word Bank — drag words to the slots above</div>';
+      shuffle(recipe.wordBank).forEach(item => {
+        const tile = document.createElement('div');
+        tile.className   = 'tile';
+        tile.textContent = item.word;
+        tile.dataset.word    = item.word;
+        tile.dataset.wordPos = item.pos;
+        tile.id = 'bank-word-' + item.word.replace(/\s/g,'_');
+        const meta = POS_META[item.pos];
+        tile.style.borderColor = meta.color + '66';
+        tile.setAttribute('aria-label', `${item.word} (${meta.label})`);
+        DragEngine.makeDraggable(tile, { type:'word', word:item.word, pos:item.pos, sourceEl:tile });
+        bank.appendChild(tile);
+      });
+    }
+
+    function onWordDroppedToSlot(data, target, x, y, sourceEl, recipe) {
+      if (data.type !== 'word') return;
+      if (target.classList.contains('slot--filled')) {
+        showHint('Click the slot to remove the word first!', 'c3-hint');
+        return;
+      }
+
+      const slotIndex = parseInt(target.dataset.index);
+      const slotPos   = target.dataset.pos;
+
+      if (data.pos !== slotPos) {
+        animate(target, 'anim-shake', 400);
+        const expected = POS_META[slotPos];
+        const actual   = POS_META[data.pos];
+        showHint(`That's a ${actual.label} — this slot needs a ${expected.label} (${expected.hint})`, 'c3-hint');
+        return;
+      }
+
+      STATE.c3.slotContents[slotIndex] = { word: data.word, pos: data.pos };
+      if (!STATE.c3.slotAttempts[slotIndex]) STATE.c3.slotAttempts[slotIndex] = 0;
+      STATE.c3.slotAttempts[slotIndex]++;
+
+      const meta = POS_META[slotPos];
+      target.classList.add('slot--filled');
+      target.style.borderColor = meta.color;
+      target.style.boxShadow   = `0 0 10px ${meta.color}66`;
+      target.style.color       = meta.color;
+      target.innerHTML         = data.word;
+      target.dataset.word      = data.word;
+      target.dataset.wordPos   = data.pos;
+      animate(target, 'anim-lock-in', 450);
+      showFloatingPoints(x, y - 30, meta.label + '!', meta.color);
+
+      const bankTile = document.getElementById('bank-word-' + data.word.replace(/\s/g,'_'));
+      if (bankTile) bankTile.remove();
+
+      updateC3Preview();
+      checkAllC3SlotsFilled(recipe);
+    }
+
+    function returnWordToBank(word, wordPos, recipe) {
+      const bank = document.getElementById('c3-word-bank');
+      const item = recipe.wordBank.find(w => w.word === word);
+      if (!item) return;
+      const tile = document.createElement('div');
+      tile.className   = 'tile';
+      tile.textContent = word;
+      tile.dataset.word    = word;
+      tile.dataset.wordPos = wordPos;
+      tile.id = 'bank-word-' + word.replace(/\s/g,'_');
+      const meta = POS_META[wordPos] || { color:'#fff' };
+      tile.style.borderColor = meta.color + '66';
+      tile.setAttribute('aria-label', `${word} (${meta.label})`);
+      DragEngine.makeDraggable(tile, { type:'word', word, pos:wordPos, sourceEl:tile });
+      bank.appendChild(tile);
+    }
+
+    function clearSlot(div) {
+      div.classList.remove('slot--filled');
+      div.style.borderColor = '';
+      div.style.boxShadow   = '';
+      div.style.color       = '';
+      const label = div.dataset.label;
+      div.innerHTML = `<span class="slot-hint">${label}</span>`;
+      delete div.dataset.word;
+      delete div.dataset.wordPos;
+      const slotIndex = parseInt(div.dataset.index);
+      delete STATE.c3.slotContents[slotIndex];
+      document.getElementById('c3-submit').disabled = true;
+      updateC3Preview();
+    }
+
+    function checkAllC3SlotsFilled(recipe) {
+      const filled = Object.keys(STATE.c3.slotContents).length;
+      if (filled >= recipe.slots.length) {
+        document.getElementById('c3-submit').disabled = false;
+      }
+    }
+
+    function updateC3Preview() {
+      const recipe  = CONTENT.concept3.recipes[STATE.c3.recipeIndex];
+      const preview = document.getElementById('c3-sentence-preview');
+      const words   = recipe.slots.map((_, i) => {
+        return STATE.c3.slotContents[i] ? STATE.c3.slotContents[i].word : '___';
+      });
+      preview.textContent = words.join(' ');
+    }
+
+    function checkC3Answer() {
+      const recipe = CONTENT.concept3.recipes[STATE.c3.recipeIndex];
+      let allValid = true;
+      const slots  = document.querySelectorAll('#c3-drop-slots .drop-slot.slot--filled');
+
+      slots.forEach(slot => {
+        const i    = parseInt(slot.dataset.index);
+        const pos  = recipe.slots[i].pos;
+        const word = slot.dataset.word;
+        const valid = recipe.validWords[pos] && recipe.validWords[pos].includes(word);
+        if (!valid) {
+          animate(slot, 'anim-shake', 400);
+          allValid = false;
+        }
+      });
+
+      if (!allValid) {
+        showHint('Some words don\'t quite fit — try moving them!', 'c3-hint');
+        return;
+      }
+
+      let pts = 0;
+      recipe.slots.forEach((_, i) => {
+        const firstTry = STATE.c3.slotAttempts[i] === 1;
+        pts += firstTry ? 75 : 25;
+      });
+      if (recipe.isBonusRound) pts *= 2;
+      STATE.c3.score += pts;
+      updateC3Score();
+
+      showFloatingPoints(window.innerWidth/2, window.innerHeight/2, `+${pts}!`, '#F9CA24');
+
+      document.getElementById('c3-submit').disabled = true;
+      setTimeout(() => advanceC3Recipe(), 1200);
+    }
+
+    function advanceC3Recipe() {
+      STATE.c3.recipeIndex++;
+      if (STATE.c3.recipeIndex >= CONTENT.concept3.recipes.length) {
+        const maxScore = CONTENT.concept3.recipes.reduce((sum, r) => {
+          const base = r.slots.length * 75;
+          return sum + (r.isBonusRound ? base * 2 : base);
+        }, 0);
+        showResults(3, STATE.c3.score, maxScore);
+      } else {
+        renderC3Recipe();
+      }
+    }
+
+    function updateC3Score() {
+      document.getElementById('c3-score').textContent = STATE.c3.score + ' pts';
+    }
+
+    /* ============================================================
+       SECTION 10: RESULTS SCREEN
+    ============================================================ */
+    function showResults(concept, score, maxScore) {
+      STATE.lastScore    = score;
+      STATE.lastMaxScore = maxScore;
+
+      const pct   = maxScore > 0 ? score / maxScore : 0;
+      const stars = pct >= 0.8 ? 3 : pct >= 0.5 ? 2 : 1;
+
+      const messages = [
+        ['Keep practicing — you\'ll get there!', '😊'],
+        ['Good work! Keep going!', '🌟'],
+        ['Amazing job! You\'re a grammar star!', '🏆']
+      ];
+      const [msg, icon] = messages[stars - 1];
+
+      document.getElementById('results-icon').textContent    = icon;
+      document.getElementById('results-title').textContent   = stars === 3 ? 'Grammar Star!' : stars === 2 ? 'Great Job!' : 'Nice Try!';
+      document.getElementById('results-message').textContent = msg;
+
+      const starsRow = document.getElementById('results-stars');
+      starsRow.innerHTML = '';
+      for (let i = 0; i < 3; i++) {
+        const star = document.createElement('div');
+        star.className   = 'star';
+        star.textContent = i < stars ? '⭐' : '☆';
+        star.style.color = i < stars ? 'var(--color-gold)' : 'var(--color-surface2)';
+        starsRow.appendChild(star);
+      }
+
+      navigateTo('results');
+      document.getElementById('results-score-display').textContent = '0';
+      setTimeout(() => {
+        animateScoreCount(document.getElementById('results-score-display'), 0, score, 1500);
+        starsRow.querySelectorAll('.star').forEach((star, i) => {
+          if (i < stars) setTimeout(() => animate(star, 'anim-star-burst', 600), i * 250);
+        });
+      }, 200);
+    }
+
+    function replayGame() {
+      startConcept(STATE.activeConcept);
+    }
+
+    /* ============================================================
+       SECTION 11: KEYBOARD SUPPORT FOR HOME CARDS
+    ============================================================ */
+    document.querySelectorAll('.game-card').forEach(card => {
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') card.click();
+      });
+    });
+
+    /* ============================================================
+       SECTION 12: INIT
+    ============================================================ */
+    document.addEventListener('DOMContentLoaded', () => {
+      DragEngine.init();
+    });
+  </script>
 </body>
 </html>
